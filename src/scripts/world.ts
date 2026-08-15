@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+import { inputs } from './input.js';
 import Car from './car.js';
 import Player from './player.js';
 
@@ -14,19 +15,35 @@ export default class World {
     private static player: Player;
     private static cars: Car[];
 
+    // world objects
+
+    private static readonly plane: THREE.Plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+    // world parameters
+
+    private static readonly GRID_WIDTH: number  = 25;
+    private static readonly GRID_HEIGHT: number = 25;
+
+    // states
+
+    public static lineMaterial: THREE.LineBasicMaterial;
+    private static lines: THREE.Line[];
+    private static showingGrid: boolean = false;
+
     constructor() {
 
         World.initializeRenderer();
         World.initializeCamera();
         World.initializeControls();
         World.initializeLighting();
+        World.initializeGrid();
 
         const plane = new THREE.Mesh(
-            new THREE.PlaneGeometry(100, 100),
+            new THREE.PlaneGeometry(World.GRID_WIDTH, World.GRID_HEIGHT),
             new THREE.MeshStandardMaterial({ color: 0xb3d9e3, roughness: 0.9, metalness: 0.0 })
         );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -0.5;
+        plane.position.y = 0;
         plane.receiveShadow = true;
         World.scene.add(plane);
 
@@ -42,6 +59,11 @@ export default class World {
         }
         
         World.player = new Player(World.camera, World.controls);
+
+        inputs.onKeyDown("Backquote", (event) => {
+            World.showingGrid = !World.showingGrid;
+            World.toggleGrid(World.showingGrid);
+        });
 
     }
 
@@ -121,12 +143,85 @@ export default class World {
         this.scene.add(ambientLight);
     }
 
+    private static initializeGrid(): void {
+
+        this.lines = [];
+
+        this.lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+
+        const halfWidth  = this.GRID_WIDTH / 2;
+        const halfHeight = this.GRID_HEIGHT / 2;
+
+        for (let x: number = -halfWidth; x < halfWidth; x++) {
+            const points = [];
+            points.push(new THREE.Vector3(x, 0.05, -halfHeight));
+            points.push(new THREE.Vector3(x, 0.05, halfHeight));
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, this.lineMaterial);
+            this.lines.push(line);
+        }
+
+        for (let y: number = -halfHeight; y < halfHeight; y++) {
+            const points = [];
+            points.push(new THREE.Vector3(-halfWidth, 0.05, y));
+            points.push(new THREE.Vector3(halfWidth, 0.05, y));
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, this.lineMaterial);
+            this.scene.add(line);
+            this.lines.push(line);
+        }
+
+        this.lines.forEach(line => {
+            line.visible = false;
+            this.scene.add(line);
+        });
+    }
+
+    // UPDATE LOOP
     static update(): void {
         this.player.update();
         this.cars.forEach(car => car.update());
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
+
+    private static toggleGrid(state: boolean): void {
+        this.lines.forEach(line => {
+            line.visible = state;
+        });
+    }
+
+    // UTILS
+
+    static screenToGridPos(x: number, y:number): THREE.Vector3 {
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const targetWorldPos = new THREE.Vector3();
+
+        // shift mouse to range -1 to 1
+        mouse.x = (x / window.innerWidth) * 2 - 1;
+        mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, this.camera);
+        raycaster.ray.intersectPlane(World.plane, targetWorldPos);
+
+        targetWorldPos.x = Math.floor(targetWorldPos.x + 0.5); 
+        targetWorldPos.z = Math.floor(targetWorldPos.z + 0.5); 
+
+        return targetWorldPos; //new THREE.Vector2(targetWorldPos.x, targetWorldPos.z);
+    }
+
+    // SETTERS
+
+    public static enableRotation(): void {
+        this.controls.enableRotate = true;
+    }
+
+    public static disableRotation(): void {
+        this.controls.enableRotate = false;
+    }
+
+    // GETTERS
 
     static get scene(): THREE.Scene {
         return this._scene;

@@ -31,7 +31,7 @@ export default class Car {
 
     public update() {
         this.t += 0.01;
-        this.mesh.position.y = 1 + Math.sin(this.t);
+        this.mesh.position.y = 1.5 + Math.sin(this.t);
         this.mesh.rotation.y += 0.01;
     }
 

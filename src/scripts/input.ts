@@ -14,6 +14,8 @@ export type InputEventName =
     | "keyUp"
     | "pointerDown"
     | "pointerUp"
+    | "leftClickDown"
+    | "leftClickUp"
     | "leftClick"
     | "rightClick";
 
@@ -69,6 +71,14 @@ export class InputController {
                 listener(event);
             }
         });
+    }
+
+    public onLeftClickDown(listener: InputListener): Unsubscribe {
+        return this.on("leftClickDown", listener);
+    }
+
+    public onLeftClickUp(listener: InputListener): Unsubscribe {
+        return this.on("leftClickUp", listener);
     }
 
     public onLeftClick(listener: InputListener): Unsubscribe {
@@ -193,6 +203,14 @@ export class InputController {
             y: event.clientY
         });
 
+        if (event.button === 0) {
+            this.emit("leftClickDown", {
+                button: event.button,
+                x: event.clientX,
+                y: event.clientY
+            });
+        }
+
         if (event.button === 2) {
             this.emit("rightClick", {
                 button: event.button,
@@ -216,6 +234,14 @@ export class InputController {
             x: clickX,
             y: clickY
         });
+
+        if (event.button === 0) {
+            this.emit("leftClickUp", {
+                button: event.button,
+                x: clickX,
+                y: clickY
+            });
+        }
 
         if (wasLeftClick) {
             this.emit("leftClick", {
