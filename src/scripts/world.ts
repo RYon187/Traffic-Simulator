@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { inputs } from './input.js';
-import Car from './car.js';
-import Player from './player.js';
+import { inputs } from './input.ts';
+import Car from './car.ts';
+import Player from './player.ts';
+
+import OneWay from './roads/one_way.ts';
 
 export default class World {
 
@@ -65,6 +67,8 @@ export default class World {
             World.toggleGrid(World.showingGrid);
         });
 
+        const oneWay = new OneWay();
+        World.scene.add(oneWay.mesh);
     }
 
     private static initializeRenderer(): void {

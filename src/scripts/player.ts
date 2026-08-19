@@ -127,9 +127,6 @@ export default class Player {
         // finally, add the new tile to the list and set it as the new current
         this.visitedTiles.push(newTile);
         this.currentTile = newTile;
-
-        // const car = new Car(0, targetWorldPos);
-        // car.addToScene(World.scene);
     }
 
     private applyEditPath(): void {
