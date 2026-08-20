@@ -7,15 +7,14 @@ export default class OneWay implements IRoad {
 
     private lanes: number;
     private cars: Car[][];
-    private next: IRoad | undefined; 
+
+    public readonly endpoints: Set<THREE.Vector3>; 
 
     private _mesh: THREE.Group;
 
-    constructor();
+    constructor(position: THREE.Vector3);
 
-    constructor(next?: IRoad, lanes?: number) {
-        if (next)
-            this.next = next;
+    constructor(position: THREE.Vector3, lanes?: number) {
 
         if (lanes)
             this.lanes = lanes;
@@ -24,8 +23,14 @@ export default class OneWay implements IRoad {
 
         this.cars = [[]];
 
+        this.endpoints = new Set<THREE.Vector3>();
+
         this._mesh = new THREE.Group();
         this.initializeMesh();
+
+        this.mesh.position.set(position.x, position.y, position.z);
+
+        this.mesh.userData = this;
     }
 
     private initializeMesh(): void {

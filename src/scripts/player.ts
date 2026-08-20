@@ -8,7 +8,7 @@ import Car from './car.js';
 enum PlayerMode {
     PLAYING,
     EDITING_IDLE, // in 'edit' mode but not actively editing / building anything
-    CREATING_ROADS
+    CREATING_ROAD
 }
 
 export default class Player {
@@ -23,8 +23,9 @@ export default class Player {
 
     // road-editing parameters (WILL REFACTOR)
 
-    private currentTile: THREE.Vector3 | undefined = undefined;
-    private visitedTiles: THREE.Vector3[] = [];
+    private startTile: THREE.Vector3 | undefined = undefined;
+    private endTile: THREE.Vector3 | undefined = undefined;
+    // private visitedTiles: THREE.Vector3[] = [];
     private pathLines: THREE.Line[] = [];
 
     constructor(camera: THREE.OrthographicCamera, controls: OrbitControls<THREE.OrthographicCamera>) {
@@ -34,16 +35,13 @@ export default class Player {
 
         inputs.onLeftClickDown((event) => {
             if (Player.mode == PlayerMode.EDITING_IDLE) {
-                Player.mode = PlayerMode.CREATING_ROADS;
-                World.disableRotation();
+                this.startNewRoad();
             }
         });
 
         inputs.onLeftClickUp((event) => {
-            if (Player.mode == PlayerMode.CREATING_ROADS) {
-                Player.mode = PlayerMode.EDITING_IDLE;
-                World.enableRotation();
-                this.applyEditPath();
+            if (Player.mode == PlayerMode.CREATING_ROAD) {
+                this.applyNewRoad();
             }
         });
 
@@ -59,7 +57,7 @@ export default class Player {
     public update(): void {
         this.updateMovement();
 
-        if (Player.mode == PlayerMode.CREATING_ROADS) {
+        if (Player.mode == PlayerMode.CREATING_ROAD) {
             this.UpdateEditPath();
         }
     }
@@ -92,67 +90,44 @@ export default class Player {
 
         const mouse = inputs.getMousePosition();
         const newTile: THREE.Vector3 = World.screenToGridPos(mouse.x, mouse.y);
- 
-        // if the user is hovering over the same tile, don't bother with updating the path
-        if (this.currentTile != undefined && this.currentTile.equals(newTile)) {
+
+        // if the user is hovering over the same tile, don't bother with updating anything
+        if (this.endTile != undefined && this.endTile.equals(newTile)) {
             return;
         }
 
-        // if the previous tile is undefined, that means the list is empty, so we start here
-        if (this.currentTile == undefined) {
-            this.visitedTiles.push(newTile);
-            this.currentTile = newTile;
-            return;
+        if (this.endTile != undefined && this.startTile?.equals(this.endTile)) {
+            // invalid ?
         }
 
-        const prevTile: THREE.Vector3 | undefined = this.visitedTiles.at(-2);
-
-        // if the new tile is the same as the previous one, then delete the current one (go back one) and return
-        if (prevTile != undefined && prevTile.equals(newTile)) {
-            this.visitedTiles.pop();
-            this.currentTile = prevTile;
-            return;
-        }
-
-        // if the new tile already exists in the path, don't add it
-        if (this.visitedTiles.find(_tile => _tile.equals(newTile))) {
-            return;
-        }
-
-        // if the new tile is not 4-way adjacent to the current one, don't add it (1.1 is just to avoid floating point issues, if any)
-        if (Math.abs(this.currentTile.x - newTile.x) + Math.abs(this.currentTile.z - newTile.z) > 1.1) {
-            return;
-        }
-
-        // finally, add the new tile to the list and set it as the new current
-        this.visitedTiles.push(newTile);
-        this.currentTile = newTile;
+        this.endTile = newTile;
     }
 
-    private applyEditPath(): void {
+    private startNewRoad(): void {
+        const mouse = inputs.getMousePosition();
+        const tile: THREE.Vector3 = World.screenToGridPos(mouse.x, mouse.y);
+        this.startTile = tile;
 
-        // prerequisit of 2+ visited tiles in a path
-        if (this.visitedTiles.length <= 1) {
+        Player.mode = PlayerMode.CREATING_ROAD;
+        World.disableRotation();
+    }
+
+    private applyNewRoad(): void {
+
+        if (!(this.startTile && this.endTile)) {
             return;
         }
 
-        for (let i: number = 1; i < this.visitedTiles.length; i++) {
-
-            const prevTile = this.visitedTiles[i - 1];
-            const currTile = this.visitedTiles[i];
-
-            const geometry = new THREE.BufferGeometry().setFromPoints([prevTile, currTile]);
-            const line = new THREE.Line(geometry, World.lineMaterial);
-            line.position.y += 0.05;
-            World.scene.add(line);
-            this.pathLines.push(line);
-
+        // if the start and end are equal then return
+        if (this.startTile?.equals(this.endTile)) {
+            return;
         }
 
-        World.lineMaterial
-
         // reset path parameters
-        this.currentTile = undefined;
-        this.visitedTiles = [];
+        this.startTile = undefined;
+        this.endTile = undefined;
+
+        Player.mode = PlayerMode.EDITING_IDLE;
+        World.enableRotation();
     }
 }

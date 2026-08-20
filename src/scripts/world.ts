@@ -5,6 +5,7 @@ import { inputs } from './input.ts';
 import Car from './car.ts';
 import Player from './player.ts';
 
+import { IRoad } from './roads/road_interfaces.ts';
 import OneWay from './roads/one_way.ts';
 
 export default class World {
@@ -21,12 +22,16 @@ export default class World {
 
     private static readonly plane: THREE.Plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
+    // road dictionary
+
+    private static roads = new Map<THREE.Vector3, IRoad>();
+
     // world parameters
 
     private static readonly GRID_WIDTH: number  = 25;
     private static readonly GRID_HEIGHT: number = 25;
 
-    // states
+    // debug grid
 
     public static lineMaterial: THREE.LineBasicMaterial;
     private static lines: THREE.Line[];
@@ -67,7 +72,7 @@ export default class World {
             World.toggleGrid(World.showingGrid);
         });
 
-        const oneWay = new OneWay();
+        const oneWay = new OneWay(new THREE.Vector3(0, 0, 0));
         World.scene.add(oneWay.mesh);
     }
 
@@ -214,6 +219,18 @@ export default class World {
 
         return targetWorldPos; //new THREE.Vector2(targetWorldPos.x, targetWorldPos.z);
     }
+
+    // ROAD MAP FUNCTIONS
+
+    // public static getRoad(gridPosition: THREE.Vector3): IRoad | undefined {
+    //     if (this.roads.has(gridPosition))
+    //         return this.roads.get(gridPosition);
+    //     return undefined;
+    // }
+
+    // public static addRoad(road: IRoad): void {
+    //     if (this.roads.has(gridPosition))
+    // }
 
     // SETTERS
 
